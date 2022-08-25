@@ -54,6 +54,7 @@
               action="fakeaction"
               :show-file-list="false"
               :http-request="uploadSectionFile"
+              accept=".jpg,.jpeg,.png,.gif,.bmp,.JPG,.JPEG,.PBG,.GIF,.BMP,.webp,.WEBP"
             >
               <div class="img-d">
                 <img src="@/assets/images/upload.png" class="avatar1" />
@@ -119,7 +120,7 @@ export default {
   name: "sFileImage",
   data() {
     return {
-      countS: 1, // 当前可上传图片数量
+      countS: 3, // 当前可上传图片数量
       query_info: {
         page: 1, // 当前页码
         limit: 12, // 每页显示条数
@@ -146,7 +147,7 @@ export default {
     // 可上传数量
     count: {
       type: Number,
-      default: 1,
+      default: 3,
     },
     status: {
       type: Boolean,
@@ -273,7 +274,7 @@ export default {
       uploadImage(data).then((response) => {
         if (response.status === 20000) {
           this.uploadList.push({
-            id: response.data.image_id,
+            // id: response.data.image_id,
             url: response.data.url,
           });
           this.getCountS();

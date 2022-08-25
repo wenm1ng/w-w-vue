@@ -1,9 +1,12 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <el-input v-model="listQuery.product_name" placeholder="请输入商品名称" style="width: 200px;" class="filter-item" clearable @change="handleFilter"/>
-      <el-select v-model="listQuery.brand_id" placeholder="请选择品牌" clearable style="width: 200px" class="filter-item" @change="handleFilter">
-        <el-option v-for="(item,index) in brandList" :key="index" :label="item.name" :value="item.id" />
+      <el-input v-model="listQuery.title" placeholder="请输入标题" style="width: 200px;" class="filter-item" clearable @change="handleFilter"/>
+      <el-select v-model="listQuery.version" placeholder="请选择版本" clearable style="width: 200px" class="filter-item" @change="handleFilter">
+        <el-option v-for="(item,index) in versionList" :key="index" :label="item.name" :value="item.id" />
+      </el-select>
+      <el-select v-model="listQuery.occupation" placeholder="请选择职业" clearable style="width: 200px" class="filter-item" @change="handleFilter">
+        <el-option v-for="(item,index) in versionList" :key="index" :label="item.name" :value="item.id" />
       </el-select>
       <el-select v-model="listQuery.status" placeholder="请选择状态" clearable style="width: 200px" class="filter-item" @change="handleFilter">
         <el-option label="禁用" value="0"></el-option>
@@ -96,34 +99,35 @@ overflow:hidden;">{{ row.description}}</span>
     <el-dialog   title="新建" :visible.sync="addDialogVisible" width="80%" @close="addDialogClose">
       <!-- 主体区 -->
       <el-form label-width="100px" :model="addForm" :rules="addRules" ref="addRef">
-        <el-form-item label="品牌" prop="brand">
-          <el-select v-model="addForm.brand_id" placeholder="请选择品牌" filterable clearable style="width:100%">
-            <el-option v-for="item in brandList" :key="item.id" :label="item.name" :value="item.id"></el-option>
+        <el-form-item label="版本" prop="version">
+          <el-select v-model="addForm.version" placeholder="请选择版本" filterable clearable style="width:100%" onchange="selectVersion">
+            <el-option v-for="item in versionList" :key="item.wv_id" :label="item.name" :value="item.wv_id"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="商品名称" prop="product_name">
-          <el-input placeholder="请输入商品名称" maxlength="20" clearable show-word-limit v-model="addForm.product_name"
-          ></el-input>
+        <el-form-item label="职业" prop="occupation">
+          <el-select v-model="addForm.occupation" placeholder="请选择职业" filterable clearable style="width:100%">
+            <el-option v-for="item in ocList[addForm.version]" :key="item.id" :label="item.name" :value="item.occupation"></el-option>
+          </el-select>
         </el-form-item>
-        <el-form-item label="商品图片">
-          <s-file-image :image_list="imageList" @confirmImsge="confirmAddImageUrl" clearable @deleteImsge="deleteImsgeAdd"></s-file-image>
+        <el-form-item label="类型" prop="tt_id">
+          <el-select v-model="addForm.tt_id" placeholder="请选择类型" filterable clearable style="width:100%">
+            <el-option v-for="item in addForm.occupation ? [{'title':'无','type_name':'','id':0}] : tabList[addForm.version]" :key="item.id" :label="item.title +'-'+ item.type_name" :value="item.id"></el-option>
+          </el-select>
         </el-form-item>
-        <el-form-item label="规格" prop="product_type">
-          <el-input placeholder="请输入规格" clearable show-word-limit v-model="addForm.product_type"></el-input>
+        <el-form-item label="标题" prop="title">
+          <el-input placeholder="请输入标题" clearable show-word-limit v-model="addForm.title"></el-input>
         </el-form-item>
-        <el-form-item label="商品条码">
-          <s-file-image :image_list="barcodeList" @confirmImsge="confirmAddBarCodeUrl" clearable @deleteImsge="deleteBarImsgeAdd"></s-file-image>
+        <el-form-item label="商品图片" prop="images">
+          <s-file-image :image_list="addForm.images" @confirmImsge="confirmAddImageUrl" clearable @deleteImsge="deleteImsgeAdd"></s-file-image>
         </el-form-item>
-        <el-form-item label="商品链接" prop="product_url">
-          <el-input type="url" placeholder="请输入商品链接" clearable show-word-limit v-model="addForm.product_url"
-          ></el-input>
+        <el-form-item label="标签" prop="tips">
+          <el-input placeholder="请输入标签" clearable show-word-limit v-model="addForm.tips"></el-input>
         </el-form-item>
-        <el-form-item label="商品价格" prop="price">
-          <el-input type="number" placeholder="请输入商品价格" clearable show-word-limit v-model="addForm.price"
-          ></el-input>
+        <el-form-item label="描述">
+          <el-input type="textarea" v-model="addForm.description" rows="10"></el-input>
         </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input placeholder="请输入商品备注" clearable show-word-limit v-model="addForm.remark"
+        <el-form-item label="字符串" prop="wa_content">
+          <el-input placeholder="请输入字符串" clearable show-word-limit v-model="addForm.wa_content"
           ></el-input>
         </el-form-item>
       </el-form>
@@ -136,34 +140,35 @@ overflow:hidden;">{{ row.description}}</span>
     <el-dialog title="编辑" :visible.sync="editDialogVisible" width="80%" @close="editDialogClose">
       <!-- 主体区 -->
       <el-form label-width="100px" :model="editForm" :rules="editRules" ref="editRef">
-        <el-form-item label="品牌" prop="brand">
-          <el-select v-model="editForm.brand_id" placeholder="请选择品牌" filterable clearable style="width:100%">
-            <el-option v-for="item in [{'id':1,'name':'芝华士'},{'id':2,'name':'杰克丹尼'}]" :key="item.id" :label="item.name" :value="item.id"></el-option>
+        <el-form-item label="版本" prop="version">
+          <el-select v-model="editForm.version" placeholder="请选择版本" filterable clearable style="width:100%" onchange="selectVersion">
+            <el-option v-for="item in versionList" :key="item.wv_id" :label="item.name" :value="item.wv_id"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="商品名称" prop="product_name">
-          <el-input placeholder="请输入商品名称" maxlength="20" clearable show-word-limit v-model="editForm.product_name"
-          ></el-input>
+        <el-form-item label="职业" prop="occupation">
+          <el-select v-model="editForm.occupation" placeholder="请选择职业" filterable clearable style="width:100%">
+            <el-option v-for="item in ocList[editForm.version]" :key="item.id" :label="item.name" :value="item.occupation"></el-option>
+          </el-select>
         </el-form-item>
-        <el-form-item label="商品图片">
-          <s-file-image :image_list="editForm.image_url ? [{'url':editForm.image_url}] : []" @confirmImsge="confirmEditImageUrl" clearable @deleteImsge="deleteImsgeEdit"></s-file-image>
+        <el-form-item label="类型" prop="tt_id">
+          <el-select v-model="editForm.tt_id" placeholder="请选择类型" filterable clearable style="width:100%">
+            <el-option v-for="item in editForm.occupation ? [{'title':'无','type_name':'','id':0}] : tabList[editForm.version]" :key="item.id" :label="item.title +'-'+ item.type_name" :value="item.id"></el-option>
+          </el-select>
         </el-form-item>
-        <el-form-item label="规格" prop="product_type">
-          <el-input placeholder="请输入规格" clearable show-word-limit v-model="editForm.product_type"></el-input>
+        <el-form-item label="标题" prop="title">
+          <el-input placeholder="请输入标题" clearable show-word-limit v-model="editForm.title"></el-input>
         </el-form-item>
-        <el-form-item label="商品条码">
-          <s-file-image :image_list="editForm.image_url ? [{'url':editForm.barcode_url}] : []" @confirmImsge="confirmEditBarCodeUrl" clearable @deleteImsge="deleteBarImsgeEdit"></s-file-image>
+        <el-form-item label="商品图片" prop="images">
+          <s-file-image :image_list="editForm.images" @confirmImsge="confirmEditImageUrl" clearable @deleteImsge="deleteImsgeEdit"></s-file-image>
         </el-form-item>
-        <el-form-item label="商品链接" prop="product_url">
-          <el-input type="url" placeholder="请输入商品链接" clearable show-word-limit v-model="editForm.product_url"
-          ></el-input>
+        <el-form-item label="标签" prop="tips">
+          <el-input placeholder="请输入标签" clearable show-word-limit v-model="editForm.tips"></el-input>
         </el-form-item>
-        <el-form-item label="商品价格" prop="price">
-          <el-input type="number" placeholder="请输入商品价格" clearable show-word-limit v-model="editForm.price"
-          ></el-input>
+        <el-form-item label="描述">
+          <el-input type="textarea" v-model="editForm.description" rows="10"></el-input>
         </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input placeholder="请输入商品备注" clearable show-word-limit v-model="editForm.remark"
+        <el-form-item label="字符串" prop="wa_content">
+          <el-input placeholder="请输入字符串" clearable show-word-limit v-model="editForm.wa_content"
           ></el-input>
         </el-form-item>
       </el-form>
@@ -268,15 +273,7 @@ overflow:hidden;">{{ row.description}}</span>
 </template>
 
 <script>
-  import {
-    productList,
-    productStatus,
-    productAdd,
-    productInfo,
-    productUpdate,
-    productDelete
-  } from '@/api/admin/poroduct'
-  import { getWaList,getWaInfo} from '@/api/admin/wa'
+  import { getWaList,getWaInfo,getVersionList,getOcList,getTabList,addWa,updateWa,waStatus} from '@/api/admin/wa'
   import { getProjectList } from '@/api/admin/project'
   import sFileImage from '@/components/common/sFileImage/sFileImage'
   import Tinymce from '@/components/common/Tinymce/index'
@@ -350,7 +347,9 @@ overflow:hidden;">{{ row.description}}</span>
           create_at:[],
           updated_at:[]
         },
-        brandList:[{'id':1,'name':'芝华士'},{'id':2,'name':'杰克丹尼'}],
+        versionList:[],
+        ocList:[],
+        tabList:[],
         imageList:[],
         barcodeList:[],
         multipleSelection:[],
@@ -359,115 +358,94 @@ overflow:hidden;">{{ row.description}}</span>
         urlDialogVisible:false,
         downloadLoading: false,
         addForm: {
-          product_name: "",
-          brand_id: "",
-          product_type: "",
-          product_url: "",
-          price: "",
-          remark: "",
-          image_url:"",
-          barcode_url:""
+          version: 1,
+          title: "",
+          occupation: "",
+          tips: "",
+          tt_id: 0,
+          images:[],
+          description:"",
+          wa_content:"",
+          status:0
         },
         editForm: {
           id: "",
-          product_name: "",
-          brand_id: "",
-          product_type: "",
-          product_url: "",
-          price: "",
-          remark: "",
-          image_url:"",
-          barcode_url:""
+          version: "",
+          title: "",
+          occupation: "",
+          tips: "",
+          tt_id: 0,
+          images:[],
+          description:"",
+          wa_content:""
         },
         addRules: {
-          group_id: [
-            { required: true, message: "请选择权限组！", trigger: "change" }
+          version: [
+            { required: true, message: "请选择版本", trigger: "change" }
           ],
-          project_id: [
-            { required: true, message: "请选择所属项目！", trigger: "change" }
+          images: [
+            { required: true, message: "请上传图片！", trigger: "change" }
           ],
-          product_name: [
-            { required: true, message: "请输入商品名称！", trigger: "blur" },
-            { min: 2, max: 20, message: "名称长度在2到20个字符", trigger: "blur" }
+          tips: [
+            { required: true, message: "请输入标签！", trigger: "change" }
           ],
-          product_url: [
-            { required: true, message: "请输入商品链接！", trigger: "blur" },
-            { validator: checkUrl, trigger: "blur" }
+          title: [
+            { required: true, message: "请输入标题！", trigger: "change" }
           ],
-          price: [
-            { required: true, message: "请输入商品价格！", trigger: "blur" },
-            { validator: checkDecimal, trigger: "blur" }
+          description: [
+            { required: true, message: "请输入描述！", trigger: "change" }
           ],
-          username: [
-            { required: true, message: "请输入账号！", trigger: "blur" },
-            { validator: checkUsername, trigger: "blur" }
+          wa_content: [
+            { required: true, message: "请输入字符串！", trigger: "change" }
           ],
-          password: [
-            { required: true, message: "请输入密码！", trigger: "blur" },
-            { validator: checkPassword, trigger: "blur" }
-          ],
-          password_confirmation: [
-            { required: true, message: "请输入确认密码！", trigger: "blur" },
-            { validator: checkPasswordConfirmation, trigger: "blur" }
-          ]
         },
         editRules: {
-          group_id: [
-            { required: true, message: "请选择权限组！", trigger: "change" }
+          version: [
+            { required: true, message: "请选择版本", trigger: "change" }
           ],
-          project_id: [
-            { required: true, message: "请选择所属项目！", trigger: "change" }
+          images: [
+            { required: true, message: "请上传图片！", trigger: "change" }
           ],
-          name: [
-            { required: true, message: "请输入名称！", trigger: "blur" },
-            { min: 2, max: 20, message: "名称长度在2到20个字符", trigger: "blur" }
+          title: [
+            { required: true, message: "请输入标题！", trigger: "change" }
           ],
-          phone: [
-            { required: true, message: "请输入手机号！", trigger: "blur" },
-            { validator: checkPhone, trigger: "blur" }
+          tips: [
+            { required: true, message: "请输入标签！", trigger: "change" }
           ],
-          username: [
-            { required: true, message: "请输入账号！", trigger: "blur" },
-            { validator: checkUsername, trigger: "blur" }
-          ]
+          description: [
+            { required: true, message: "请输入描述！", trigger: "change" }
+          ],
+          wa_content: [
+            { required: true, message: "请输入字符串！", trigger: "change" }
+          ],
         },
         projectList:[],
       }
     },
     async created() {
       await this.getList()
+      await this.getVersionList()
+      await this.getOcList();
+      await this.getTabList();
     },
     methods: {
+      //选中版本
+      selectVersion(val){
+        console.log(val);
+      },
       // 图片上传回调
       confirmAddImageUrl(res) {
-        console.log(res);
-        this.addForm.image_url = res[0].url
-      },
-      confirmAddBarCodeUrl(res) {
-        console.log(res);
-        this.addForm.barcode_url = res[0].url
+        console.log(res)
+        this.addForm.images = res
       },
       confirmEditImageUrl(res) {
-        console.log(res);
-        this.editForm.image_url = res[0].url
-      },
-      confirmEditBarCodeUrl(res) {
-        console.log(res);
-        this.editForm.barcode_url = res[0].url
+        this.editForm.images = res
       },
       deleteImsgeAdd(){
         this.addForm.image_url = ''
       },
-      deleteBarImsgeAdd(){
-        this.addForm.barcode_url = ''
-      },
-      deleteImsgeEdit(res){
-        console.log(res)
-        console.log(111111111);
+      deleteImsgeEdit(){
         this.editForm.image_url = ''
-      },
-      deleteBarImsgeEdit(){
-        this.editForm.barcode_url = ''
       },
       // deleteImsge(){
       //   this.editForm.barcode_url = ''
@@ -508,6 +486,28 @@ overflow:hidden;">{{ row.description}}</span>
           this.listLoading = false
         })
       },
+      async getVersionList() {
+        getVersionList().then(response => {
+          if(response.status === 20000){
+            this.versionList = response.data
+          }
+        })
+      },
+      async getOcList() {
+        getOcList().then(response => {
+          if(response.status === 20000){
+            this.ocList = response.data
+          }
+        })
+      },
+      async getTabList() {
+        getTabList().then(response => {
+          if(response.status === 20000){
+            this.tabList = response.data
+          }
+        })
+      },
+
       // 搜索
       handleFilter() {
         this.listQuery.page = 1
@@ -534,7 +534,7 @@ overflow:hidden;">{{ row.description}}</span>
       add() {
         this.$refs.addRef.validate(valid => {
           if (valid) {
-            productAdd(this.addForm).then(response => {
+            addWa(this.addForm).then(response => {
               if(response.status === 20000){
                 this.$base.message({ message: response.message })
                 this.addDialogVisible = false
@@ -546,7 +546,7 @@ overflow:hidden;">{{ row.description}}</span>
       },
       // 状态调整
       setStatus(info) {
-        productStatus({id:info.id,status:info.status}).then(response => {
+        waStatus({id:info.id,status:info.status}).then(response => {
           if(response.status === 20000){
             this.$base.message({message:response.message})
           }else{
@@ -556,7 +556,7 @@ overflow:hidden;">{{ row.description}}</span>
       },
       // 打开编辑按钮对话框
       edit(id) {
-        productInfo({id:id}).then(response => {
+        getWaInfo({id:id}).then(response => {
           if(response.status === 20000){
             this.editDialogVisible = true
             this.editForm = response.data
@@ -567,7 +567,7 @@ overflow:hidden;">{{ row.description}}</span>
       update() {
         this.$refs.editRef.validate(valid => {
           if (valid) {
-            productUpdate(this.editForm).then(response => {
+            updateWa(this.editForm).then(response => {
               if(response.status === 20000){
                 this.$base.message({ message: response.message })
                 this.editDialogVisible = false
