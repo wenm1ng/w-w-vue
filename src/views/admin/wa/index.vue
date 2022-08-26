@@ -6,7 +6,7 @@
         <el-option v-for="(item,index) in versionList" :key="index" :label="item.name" :value="item.id" />
       </el-select>
       <el-select v-model="listQuery.occupation" placeholder="请选择职业" clearable style="width: 200px" class="filter-item" @change="handleFilter">
-        <el-option v-for="(item,index) in versionList" :key="index" :label="item.name" :value="item.id" />
+        <el-option v-for="(item,index) in ocList[1]" :key="index" :label="item.name" :value="item.id" />
       </el-select>
       <el-select v-model="listQuery.status" placeholder="请选择状态" clearable style="width: 200px" class="filter-item" @change="handleFilter">
         <el-option label="禁用" value="0"></el-option>
@@ -106,6 +106,7 @@ overflow:hidden;">{{ row.description}}</span>
         </el-form-item>
         <el-form-item label="职业" prop="occupation">
           <el-select v-model="addForm.occupation" placeholder="请选择职业" filterable clearable style="width:100%">
+            <el-option label="无" value=""></el-option>
             <el-option v-for="item in ocList[addForm.version]" :key="item.id" :label="item.name" :value="item.occupation"></el-option>
           </el-select>
         </el-form-item>
@@ -147,6 +148,7 @@ overflow:hidden;">{{ row.description}}</span>
         </el-form-item>
         <el-form-item label="职业" prop="occupation">
           <el-select v-model="editForm.occupation" placeholder="请选择职业" filterable clearable style="width:100%">
+            <el-option label="无" value=""></el-option>
             <el-option v-for="item in ocList[editForm.version]" :key="item.id" :label="item.name" :value="item.occupation"></el-option>
           </el-select>
         </el-form-item>
