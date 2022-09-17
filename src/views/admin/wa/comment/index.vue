@@ -1,24 +1,28 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <el-input v-model="listQuery.title" placeholder="请输入标题" style="width: 200px;" class="filter-item" clearable @change="handleFilter"/>
-      <el-select v-model="listQuery.version" placeholder="请选择版本" clearable style="width: 200px" class="filter-item" @change="handleFilter">
-        <el-option v-for="(item,index) in versionList" :key="index" :label="item.name" :value="item.id" />
-      </el-select>
-      <el-select v-model="listQuery.occupation" placeholder="请选择职业" clearable style="width: 200px" class="filter-item" @change="handleFilter">
-        <el-option v-for="(item,index) in ocList[1]" :key="index" :label="item.name" :value="item.id" />
+      <el-input v-model="listQuery.nickName" placeholder="请输入用户昵称" style="width: 200px;" class="filter-item" clearable @change="handleFilter"/>
+      <el-select v-model="listQuery.type" placeholder="请选择类型" clearable style="width: 200px" class="filter-item" @change="handleFilter">
+        <el-option v-for="(item,index) in typeList" :key="index" :label="item.name" :value="item.id" />
       </el-select>
       <el-select v-model="listQuery.status" placeholder="请选择状态" clearable style="width: 200px" class="filter-item" @change="handleFilter">
-        <el-option label="禁用" value="0"></el-option>
-        <el-option label="启用" value="1"></el-option>
+        <el-option label="封禁" value="0"></el-option>
+        <el-option label="正常" value="1"></el-option>
       </el-select>
-      <s-date-picker :date="listQuery.created_at" @changeDateTime="eventStartTime"></s-date-picker>
+<!--      <s-date-picker :date="listQuery.create_at" @changeDateTime="eventStartTime"></s-date-picker>-->
+      <el-form-item label="日期">
+        <s-date-picker
+          style="position:relative;top:4px;width:300px;"
+          :showType="showType"
+          :showValueFormat="showValueFormat"
+          @changeDateTime="chooseDate"
+          startPlaceholder="开始操作时间"
+          endPlaceholder="结束操作时间"
+        ></s-date-picker>
+      </el-form-item>
       <div>
         <el-button v-waves class="filter-item" type="info" icon="fa fa-refresh" @click="refresh">
           重置
-        </el-button>
-        <el-button v-waves class="filter-item" type="primary" icon="el-icon-plus" @click="addDialogVisible = true">
-          新建
         </el-button>
         <el-button v-waves class="filter-item" type="danger" :disabled="multipleSelection.length===0" icon="el-icon-delete" @click="operationLogDestroyAll">
           删除
@@ -40,21 +44,21 @@
           <span>{{ row.id }}</span>
         </template>
       </el-table-column>
-      <el-table-column width="150px" align="center" label="标题">
+      <el-table-column width="600px" align="center" label="评论内容">
         <template slot-scope="{row}">
-          <span>{{ row.title }}</span>
+          <span>{{ row.content }}</span>
         </template>
       </el-table-column>
-      <el-table-column width="150px" align="center" label="标签">
+      <el-table-column width="150px" align="center" label="用户昵称">
         <template slot-scope="{row}">
-          <span>{{ row.tips}}</span>
+          <span>{{ row.user_info.nickName}}</span>
         </template>
       </el-table-column>
-      <el-table-column width="120px" align="center" label="图片">
+      <el-table-column width="120px" align="center" label="用户头像">
         <template slot-scope="{row}">
           <el-popover placement="top-start" title="" trigger="hover">
-            <img :src="row.image_url" alt="" style="width: 200px;">
-            <img slot="reference" :src="row.image_url" style="width: 100px">
+            <img :src="row.user_info.avatarUrl" alt="" style="width: 200px;">
+            <img slot="reference" :src="row.user_info.avatarUrl" style="width: 30px">
           </el-popover>
         </template>
       </el-table-column>
@@ -62,7 +66,7 @@
         <template slot-scope="{row}">
           <span style="white-space:nowrap;
 text-overflow:ellipsis;
-overflow:hidden;">{{ row.description}}</span>
+overflow:hidden;">{{ row.type === 1 ? 'wa评论' : '帮助评论'}}</span>
         </template>
       </el-table-column>
       <el-table-column align="center" label="状态" prop="status" width="80">
@@ -85,205 +89,19 @@ overflow:hidden;">{{ row.description}}</span>
       </el-table-column>
       <el-table-column label="操作" align="center" width="230px" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
-          <el-button v-waves type="primary" size="mini" @click="edit(row.id)">
-            修改
-          </el-button>
-          <el-button v-waves size="mini" type="danger" @click="productDelete(row.id)">
+          <el-button v-waves size="mini" type="danger" @click="commentDel(row.id)">
             删除
           </el-button>
         </template>
       </el-table-column>
     </el-table>
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
-    <!-- 添加对话框 -->
-    <el-dialog   title="新建" :visible.sync="addDialogVisible" width="80%" @close="addDialogClose">
-      <!-- 主体区 -->
-      <el-form label-width="100px" :model="addForm" :rules="addRules" ref="addRef">
-        <el-form-item label="版本" prop="version">
-          <el-select v-model="addForm.version" placeholder="请选择版本" filterable clearable style="width:100%" onchange="selectVersion">
-            <el-option v-for="item in versionList" :key="item.wv_id" :label="item.name" :value="item.wv_id"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="职业" prop="occupation">
-          <el-select v-model="addForm.occupation" placeholder="请选择职业" filterable clearable style="width:100%">
-            <el-option label="无" value=""></el-option>
-            <el-option v-for="item in ocList[addForm.version]" :key="item.id" :label="item.name" :value="item.occupation"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="类型" prop="tt_id">
-          <el-select v-model="addForm.tt_id" placeholder="请选择类型" filterable clearable style="width:100%">
-            <el-option v-for="item in addForm.occupation ? [{'title':'无','type_name':'','id':0}] : tabList[addForm.version]" :key="item.id" :label="item.title +'-'+ item.type_name" :value="item.id"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="标题" prop="title">
-          <el-input placeholder="请输入标题" clearable show-word-limit v-model="addForm.title"></el-input>
-        </el-form-item>
-        <el-form-item label="商品图片" prop="images">
-          <s-file-image :image_list="addForm.images" @confirmImsge="confirmAddImageUrl" clearable @deleteImsge="deleteImsgeAdd"></s-file-image>
-        </el-form-item>
-        <el-form-item label="标签" prop="tips">
-          <el-input placeholder="请输入标签" clearable show-word-limit v-model="addForm.tips"></el-input>
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input type="textarea" v-model="addForm.description" rows="10"></el-input>
-        </el-form-item>
-        <el-form-item label="字符串" prop="wa_content">
-          <el-input placeholder="请输入字符串" clearable show-word-limit v-model="addForm.wa_content"
-          ></el-input>
-        </el-form-item>
-        <el-form-item label="来源链接" prop="wa_content">
-          <el-input placeholder="请输入来源链接" clearable show-word-limit v-model="addForm.origin_url"
-          ></el-input>
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button v-waves @click="addDialogVisible = false">取 消</el-button>
-        <el-button v-waves type="primary" @click="add()">确 定</el-button>
-      </span>
-    </el-dialog>
-    <!-- 编辑对话框 -->
-    <el-dialog title="编辑" :visible.sync="editDialogVisible" width="80%" @close="editDialogClose">
-      <!-- 主体区 -->
-      <el-form label-width="100px" :model="editForm" :rules="editRules" ref="editRef">
-        <el-form-item label="版本" prop="version">
-          <el-select v-model="editForm.version" placeholder="请选择版本" filterable clearable style="width:100%" onchange="selectVersion">
-            <el-option v-for="item in versionList" :key="item.wv_id" :label="item.name" :value="item.wv_id"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="职业" prop="occupation">
-          <el-select v-model="editForm.occupation" placeholder="请选择职业" filterable clearable style="width:100%">
-            <el-option label="无" value=""></el-option>
-            <el-option v-for="item in ocList[editForm.version]" :key="item.id" :label="item.name" :value="item.occupation"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="类型" prop="tt_id">
-          <el-select v-model="editForm.tt_id" placeholder="请选择类型" filterable clearable style="width:100%">
-            <el-option v-for="item in editForm.occupation ? [{'title':'无','type_name':'','id':0}] : tabList[editForm.version]" :key="item.id" :label="item.title +'-'+ item.type_name" :value="item.id"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="标题" prop="title">
-          <el-input placeholder="请输入标题" clearable show-word-limit v-model="editForm.title"></el-input>
-        </el-form-item>
-        <el-form-item label="商品图片" prop="images">
-          <s-file-image :image_list="editForm.images" @confirmImsge="confirmEditImageUrl" clearable @deleteImsge="deleteImsgeEdit"></s-file-image>
-        </el-form-item>
-        <el-form-item label="标签" prop="tips">
-          <el-input placeholder="请输入标签" clearable show-word-limit v-model="editForm.tips"></el-input>
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input type="textarea" v-model="editForm.description" rows="10"></el-input>
-        </el-form-item>
-        <el-form-item label="字符串" prop="wa_content">
-          <el-input placeholder="请输入字符串" clearable show-word-limit v-model="editForm.wa_content"
-          ></el-input>
-        </el-form-item>
-        <el-form-item label="来源链接" prop="wa_content">
-          <el-input placeholder="请输入来源链接" clearable show-word-limit v-model="editForm.origin_url"
-          ></el-input>
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button v-waves @click="editDialogVisible = false">取 消</el-button>
-        <el-button v-waves type="primary" @click="update()" >确 定</el-button>
-      </span>
-    </el-dialog>
 
-    <!-- 链接弹窗 -->
-    <el-dialog title="链接弹窗" :visible.sync="urlDialogVisible" width="80%" @close="editDialogClose">
-      <!-- 主体区 -->
-      <el-table v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%" @selection-change="handleSelectionChange">
-        <el-table-column type="selection" align="center" width="55"></el-table-column>
-        <el-table-column align="center" label="序号" width="80px">
-          <template slot-scope="{row}">
-            <span>{{ row.id }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column width="150px" align="center" label="品牌">
-          <template slot-scope="{row}">
-            <span>{{ row.product_name }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column width="150px" align="center" label="商品名称">
-          <template slot-scope="{row}">
-            <span>{{ row.product_name}}</span>
-          </template>
-        </el-table-column>
-        <el-table-column width="120px" align="center" label="图片">
-          <template slot-scope="{row}">
-            <el-popover placement="top-start" title="" trigger="hover">
-              <img :src="row.image_url" alt="" style="width: 200px;">
-              <img slot="reference" :src="row.image_url" style="width: 100px">
-            </el-popover>
-          </template>
-        </el-table-column>
-        <el-table-column width="130px" align="center" label="规格">
-          <template slot-scope="{row}">
-            <span>{{ row.product_type }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column width="120px" align="center" label="条码">
-          <template slot-scope="{row}">
-            <el-popover placement="top-start" title="" trigger="hover">
-              <img :src="row.barcode_url" alt="" style="width: 200px;">
-              <img slot="reference" :src="row.barcode_url" style="width: 100px">
-            </el-popover>
-          </template>
-        </el-table-column>
-        <el-table-column width="160px" align="center" label="链接">
-          <template slot-scope="{row}">
-            <el-link type="success">{{ row.product_url }}</el-link>
-          </template>
-        </el-table-column>
-        <el-table-column width="160px" align="center" label="价格">
-          <template slot-scope="{row}">
-            <span>{{ row.price }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column width="160px" align="center" label="备注">
-          <template slot-scope="{row}">
-            <span>{{ row.remark }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column width="160px" align="center" label="创建时间">
-          <template slot-scope="{row}">
-            <span>{{ row.created_at }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column align="center" label="状态" prop="status" width="80">
-          <template slot-scope="{row}">
-            <el-tooltip
-              effect="dark"
-              :content="row.status===1 ? '启用' : '禁用'"
-              placement="top"
-              :enterable="false">
-              <el-switch
-                v-model="row.status"
-                active-color="#5FB878"
-                inactive-color="#d2d2d2"
-                :active-value="1"
-                :inactive-value="0"
-                @change="setStatus(row)"
-              ></el-switch>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" align="center" width="230px" class-name="small-padding fixed-width">
-          <template slot-scope="{row}">
-            <el-button v-waves type="primary" size="mini" @click="edit(row.id)">
-              编辑
-            </el-button>
-            <el-button v-waves size="mini" type="danger" @click="productDelete(row.id)">
-              删除
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-dialog>
   </div>
 </template>
 
 <script>
-  import { getWaList,getWaInfo,getVersionList,getOcList,getTabList,addWa,updateWa,waStatus} from '@/api/admin/wa'
+  import { getCommentList,getWaInfo,getVersionList,getOcList,getTabList,addWa,updateWa,waStatus,commentStatus,commentDel} from '@/api/admin/wa'
   import { getProjectList } from '@/api/admin/project'
   import sFileImage from '@/components/common/sFileImage/sFileImage'
   import Tinymce from '@/components/common/Tinymce/index'
@@ -344,6 +162,9 @@ overflow:hidden;">{{ row.description}}</span>
         }
       };
       return {
+        // 日期选择器显示类型及格式
+        showType:'daterange',
+        showValueFormat:'yyyy-MM-dd',
         uploadUrl:process.env.VUE_APP_BASE_API + '/admin/upload/fileImage',
         list: null,
         total: 0,
@@ -351,13 +172,13 @@ overflow:hidden;">{{ row.description}}</span>
         listQuery: {
           page: 1,
           limit: 10,
-          version:0,
-          occupation:'',
-          type:0,
+          nickName: '',
+          status: '',
+          type:'',
           create_at:[],
-          updated_at:[]
         },
-        versionList:[],
+        typeList:[{"name":"wa","id":1},{"name":"帮助回答","id":2}],
+        statusList:[{"name":"正常","id":1},{"name":"封禁","id":0}],
         ocList:[],
         tabList:[],
         imageList:[],
@@ -434,11 +255,18 @@ overflow:hidden;">{{ row.description}}</span>
     },
     async created() {
       await this.getList()
-      await this.getVersionList()
-      await this.getOcList();
-      await this.getTabList();
+      // await this.getVersionList()
+      // await this.getOcList();
+      // await this.getTabList();
     },
     methods: {
+      // 日期选择
+      chooseDate(val){
+        console.log('日期选择');
+        console.log(val);
+        this.listQuery.create_at = val;
+        this.onLoadData();
+      },
       //选中版本
       selectVersion(val){
         console.log(val);
@@ -488,7 +316,7 @@ overflow:hidden;">{{ row.description}}</span>
       // 获取表格列表
       async getList() {
         this.listLoading = true
-        getWaList(this.listQuery).then(response => {
+        getCommentList(this.listQuery).then(response => {
           if(response.status === 20000){
             this.list = response.data.list
             this.total = response.data.total
@@ -496,24 +324,11 @@ overflow:hidden;">{{ row.description}}</span>
           this.listLoading = false
         })
       },
-      async getVersionList() {
-        getVersionList().then(response => {
+      async commentDel(id) {
+        commentDel({id:[id]}).then(response => {
           if(response.status === 20000){
-            this.versionList = response.data
-          }
-        })
-      },
-      async getOcList() {
-        getOcList().then(response => {
-          if(response.status === 20000){
-            this.ocList = response.data
-          }
-        })
-      },
-      async getTabList() {
-        getTabList().then(response => {
-          if(response.status === 20000){
-            this.tabList = response.data
+            this.$base.message({message:response.message})
+            this.getList();
           }
         })
       },
@@ -556,7 +371,7 @@ overflow:hidden;">{{ row.description}}</span>
       },
       // 状态调整
       setStatus(info) {
-        waStatus({id:info.id,status:info.status}).then(response => {
+        commentStatus({id:info.id,status:info.status}).then(response => {
           if(response.status === 20000){
             this.$base.message({message:response.message})
           }else{

@@ -61,3 +61,27 @@ export function waStatus(data) {
     data:data
   })
 }
+//获取评论列表
+export function getCommentList(data) {
+  return request({
+    url: '/admin/wa/comment/list',
+    method: 'get',
+    params:data
+  })
+}
+//修改评论状态
+export function commentStatus(data) {
+  return request({
+    url: '/admin/wa/comment/status',
+    method: 'post',
+    data:data
+  })
+}
+//删除评论
+export function commentDel(data) {
+  return request({
+    url: '/admin/wa/comment/del',
+    method: 'post',
+    data:data
+  })
+}

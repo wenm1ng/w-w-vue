@@ -192,6 +192,12 @@
         </el-table>
       </div>
       <div v-show="showKp" class="card-container">
+        <input
+          type="checkbox"
+          name="nodeAll"
+          id="btn1"
+          @click="checkeds('nodeStr')"
+        /><label style="padding-left: 5px" for="btn1">全选</label>
         <tableCard
           :dataCard="dataCard"
           :showCheckVal="showFilter"
@@ -208,12 +214,7 @@
         style="display: inline-block; width: 120px; padding-top: 19px"
         v-show="showKp & !showFilter"
       >
-        <input
-          type="checkbox"
-          name="nodeAll"
-          id="btn1"
-          @click="checkeds('nodeStr')"
-        /><label style="padding-left: 5px" for="btn1">全选</label>
+
       </div>
     </div>
 
@@ -513,7 +514,7 @@ export default {
       this.onLoadData();
     },
     //点击一次选中，再点击一次取消选中
-    checked(item) { 
+    checked(item) {
       if (this.checkList.indexOf(item.id) > -1) {
         let index = this.checkList.indexOf(item.id);
         this.checkList.splice(index, 1);
@@ -530,7 +531,7 @@ export default {
       this.showFilter = selection.length === 0;
     },
     // 缩略图/列表切换
-    checkBtn(val) { 
+    checkBtn(val) {
       if (val == 1) {
         this.showLb = true;
         this.showKp = false;
@@ -676,7 +677,7 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>  
+<style lang="scss" scoped>
 .container {
   padding: 20px;
   .top-filter {
@@ -744,7 +745,7 @@ export default {
   }
 
   .medium-container {
-    
+
   }
 }
 </style>
