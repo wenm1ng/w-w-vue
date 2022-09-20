@@ -85,3 +85,39 @@ export function commentDel(data) {
     data:data
   })
 }
+
+//排行榜列表
+export function getRankList(data) {
+  return request({
+    url: '/admin/wa/rank/list',
+    method: 'post',
+    data:data
+  })
+}
+
+//回答列表
+export function getAnswerList(data) {
+  return request({
+    url: '/admin/wa/answer/list',
+    method: 'get',
+    params:data
+  })
+}
+
+//删除回答
+export function answerDelete(data) {
+  return request({
+    url: '/admin/wa/answer/delete',
+    method: 'post',
+    data:data
+  })
+}
+
+//修改回答状态
+export function answerStatus(data) {
+  return request({
+    url: '/admin/wa/answer/status',
+    method: 'post',
+    data:data
+  })
+}
